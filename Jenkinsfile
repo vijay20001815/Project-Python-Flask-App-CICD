@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-cred-id')
-        IMAGE_NAME = 'vijaykmartech/flask-portfolio:4'
+        IMAGE_NAME = 'vijaykmartech/flask-portfolio'
+        IMAGE_TAG  = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -11,7 +12,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
-                sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER .'
+                sh '''
+                  docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                '''
             }
         }
 
@@ -21,7 +24,8 @@ pipeline {
                 sh '''
                   echo $DOCKERHUB_CREDENTIALS_PSW | docker login \
                   -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                  docker push $IMAGE_NAME:$BUILD_NUMBER
+
+                  docker push ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
         }
@@ -31,7 +35,10 @@ pipeline {
                 echo 'Deploying application...'
                 sh '''
                   docker rm -f flask-app || true
-                  docker run -d --name flask-app -p 5000:5000 $IMAGE_NAME:$BUILD_NUMBER
+                  docker run -d \
+                    --name flask-app \
+                    -p 5000:5000 \
+                    ${IMAGE_NAME}:${IMAGE_TAG}
                 '''
             }
         }
@@ -46,3 +53,4 @@ pipeline {
         }
     }
 }
+
